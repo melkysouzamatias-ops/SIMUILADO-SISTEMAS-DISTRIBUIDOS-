@@ -1,0 +1,45 @@
+Código Utilizado no Ubuntu:
+
+cat > servidor.py <<'EOF'
+import socket
+with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as servidor:
+    servidor.bind(("127.0.0.1", 5005))
+    servidor.listen(1)
+    print("Servidor aguardando conexão na porta 5005", flush=True)
+    conexao, endereco = servidor.accept()
+    with conexao:
+        pedido = conexao.recv(1024).decode("utf-8")
+        print("Pedido recebido:", pedido, flush=True)
+        resposta = "Recebido pelo servidor: " + pedido
+        conexao.sendall(resposta.encode("utf-8"))
+EOF
+
+cat > cliente.py <<'EOF'
+import socket
+with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as cliente:
+    cliente.connect(("127.0.0.1", 5005))
+    cliente.sendall("PEDIDO-42".encode("utf-8"))
+    resposta = cliente.recv(1024).decode("utf-8")
+    print("Resposta recebida:", resposta)
+EOF
+
+python3 servidor.py > servidor.log 2>&1 &
+sleep 1
+python3 cliente.py
+cat servidor.log
+
+Resultado:
+
+Resposta recebida: Recebido pelo servidor: PEDIDO-42
+[1]+  Done                    python3 servidor.py > servidor.log 2>&1
+Servidor aguardando conexão na porta 5005
+Pedido recebido: PEDIDO-42
+
+1-Qual processo iniciou a conexão? 
+O programa cliente.py. Ele iniciou a comunicação executando o método cliente.connect(("127.0.0.1", 5005))
+
+2-Qual processo recebeu PEDIDO-42 e produziu a resposta?   
+O programa servidor.py. Ele escutou na porta 5005, recebeu a mensagem PEDIDO-42 via socket TCP e retornou a string 
+
+3-Por que o cliente não conseguiria realizar esse teste se o servidor não estivesse em execução?   
+Porque o protocolo TCP é orientado à conexão. Para que o cliente consiga se conectar, é obrigatório existir um processo servidor ativo, associado ao endereço IP e à porta configurados (127.0.0.1:5005), aguardando e aceitando conexões. Se o servidor estivesse desligado, o sistema operacional do cliente retornaria um erro de conexão recusada (ConnectionRefusedError). 
